@@ -63,8 +63,8 @@ import { TaskFlowModule } from '@sotatech/nest-taskflow';
     TaskFlowModule.forRoot({
       redis: { config: { host: 'localhost', port: 6379 } },
       strategies: {
-        EMAIL: new EmailStrategy(), // Strategy for handling Email OTP logic
-        SMS: new SmsStrategy(), // Strategy for handling SMS OTP logic
+        [TaskFlowMethods.EMAIL]: new EmailStrategy(), // Strategy for handling Email OTP logic
+        [TaskFlowMethods.SMS]: new SmsStrategy(), // Strategy for handling SMS OTP logic
       },
     }),
   ],
@@ -81,7 +81,7 @@ const task = await taskFlowService.addTask(
   'QUEUE_NAME', // The queue where the task will be added
   { userId: '12345', email: 'user@example.com' }, // Task data
   {
-    allowedMethods: ['EMAIL', 'SMS'], // Methods allowed for OTP verification
+    allowedMethods: [TaskFlowMethods.EMAIL, TaskFlowMethods.SMS], // Methods allowed for OTP verification
     recipient: { email: 'user@example.com' }, // Recipient details
     priority: 5, // Higher priority tasks are executed first
     ttl: 60000, // Task expires in 60 seconds
@@ -95,10 +95,11 @@ console.log('Task created:', task);
 Verify a task by validating its OTP.
 
 ```typescript
+const otp = "123456"
 const isVerified = await taskFlowService.verify(
   task.id, // Task ID
-  'EMAIL', // Method verfify
-  '123456', // OTP
+  TaskFlowMethods.EMAIL, // Method verfify
+  otp, // OTP
 );
 if (isVerified) {
   console.log('Task verified successfully.');
@@ -135,9 +136,10 @@ You can resend OTP for a specific task and method using the resendOtp method. Th
 
 Example: Resending OTP for a Task
 ```typescript
+const taskId = "task_123456"
 await taskFlowService.resendOtp(
-  'task_id', // The unique identifier of the task
-  'EMAIL',   // The verification method (e.g., 'EMAIL', 'SMS')
+  taskId, // The unique identifier of the task
+  TaskFlowMethods.EMAIL,   // The verification method (e.g., 'EMAIL', 'SMS')
 );
 console.log('OTP resent successfully.');
 ```
@@ -209,8 +211,8 @@ TaskFlowModule.forRootAsync({
   useFactory: async () => ({
     redis: { config: { host: 'localhost', port: 6379 } },
     strategies: {
-      EMAIL: new EmailStrategy(), // Handle Email OTP
-      SMS: new SmsStrategy(), // Handle SMS OTP
+      [TaskFlowMethods.EMAIL]: new EmailStrategy(), // Handle Email OTP
+      [TaskFlowMethods.SMS]: new SmsStrategy(), // Handle SMS OTP
     },
   }),
 });
