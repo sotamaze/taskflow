@@ -1,5 +1,5 @@
 import { SetMetadata } from '@nestjs/common';
-import { ON_TASK_VERIFIED_KEY } from './taskflow.constant';
+import { ON_TASK_VERIFIED_KEY } from '../constants/taskflow.constant';
 
 /**
  * Decorator to register a method to be executed when a task is verified.

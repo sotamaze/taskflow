@@ -1,2 +1,2 @@
 export * from './taskflow.constant';
-export * from './on-task-verified.decorator';
+export * from '../decorators/on-task-verified.decorator';
