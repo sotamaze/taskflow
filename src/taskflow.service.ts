@@ -28,7 +28,7 @@ export class TaskFlowService {
     private readonly redisService: RedisService,
   ) {
     this.redisClient = this.redisService.getOrThrow('client');
-    this.subscriberClient = this.redisService.getOrThrow('sub');
+    this.subscriberClient = this.redisService.getOrThrow('subscriber');
   }
 
   /**
