@@ -7,7 +7,6 @@ import {
 } from './interfaces';
 import { TASKFLOW_OPTIONS, TASKFLOW_STRATEGIES } from './constants';
 import { CallbackModule } from './callback/callback.module';
-import { TaskEventListenerService } from './callback/task-event-listener.service';
 
 @Global()
 @Module({})
@@ -28,7 +27,6 @@ export class TaskFlowModule {
 
     const providers: Provider[] = [
       TaskFlowService,
-      TaskEventListenerService,
       strategiesProvider,
       {
         provide: TASKFLOW_OPTIONS,
@@ -69,7 +67,6 @@ export class TaskFlowModule {
         inject: [TASKFLOW_OPTIONS],
       },
       TaskFlowService,
-      TaskEventListenerService,
     ];
 
     return {

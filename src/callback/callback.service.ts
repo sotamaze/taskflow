@@ -1,14 +1,18 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
+import { TASKFLOW_OPTIONS } from 'src/constants';
 
 @Injectable()
 export class CallbackService {
   private readonly logger = new Logger(CallbackService.name);
 
   constructor(
-    private readonly retryConfig: {
-      maxAttempts?: number;
-      backoffStrategy?: 'exponential' | 'linear' | 'fixed';
-      backoffTime?: number;
+    @Inject(TASKFLOW_OPTIONS) // Inject TaskFlow options
+    private readonly options: {
+      retry?: {
+        maxAttempts?: number;
+        backoffStrategy?: 'exponential' | 'linear' | 'fixed';
+        backoffTime?: number;
+      };
     },
   ) {}
 
@@ -26,7 +30,7 @@ export class CallbackService {
       maxAttempts = 3,
       backoffStrategy = 'fixed',
       backoffTime = 1000,
-    } = this.retryConfig;
+    } = this.options.retry || {}; // Default to an empty object if retry is undefined
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
