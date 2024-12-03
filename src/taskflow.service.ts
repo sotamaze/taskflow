@@ -91,6 +91,12 @@ export class TaskFlowService {
     // Update task status to 'success'
     await this.updateTaskStatus(taskId, TaskFlowStatus.SUCCESS, method);
 
+    // Publish event to Redis channel
+    await this.redisClient.publish(
+      'task_verified',
+      JSON.stringify({ taskId, queue: method }),
+    );
+
     // Log successful verification
     this.logger.log(`Session ${taskId} verified successfully via ${method}`);
     return true;
