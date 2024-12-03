@@ -7,11 +7,10 @@ import {
 } from './interfaces';
 import { TASKFLOW_OPTIONS, TASKFLOW_STRATEGIES } from './constants';
 import { CallbackModule } from './callback/callback.module';
+import { TaskEventListenerService } from './callback/task-event-listener.service';
 
 @Global()
-@Module({
-  imports: [CallbackModule],
-})
+@Module({})
 export class TaskFlowModule {
   /**
    * Synchronous configuration method for the module
@@ -29,6 +28,7 @@ export class TaskFlowModule {
 
     const providers: Provider[] = [
       TaskFlowService,
+      TaskEventListenerService,
       strategiesProvider,
       {
         provide: TASKFLOW_OPTIONS,
@@ -38,7 +38,7 @@ export class TaskFlowModule {
 
     return {
       module: TaskFlowModule,
-      imports: [RedisModule.forRoot(options.redis)],
+      imports: [RedisModule.forRoot(options.redis), CallbackModule],
       providers: providers,
       exports: [TaskFlowService, TASKFLOW_OPTIONS, TASKFLOW_STRATEGIES],
     };
@@ -69,6 +69,7 @@ export class TaskFlowModule {
         inject: [TASKFLOW_OPTIONS],
       },
       TaskFlowService,
+      TaskEventListenerService,
     ];
 
     return {
@@ -78,6 +79,7 @@ export class TaskFlowModule {
           useFactory: async (options: TaskFlowModuleOptions) => options.redis,
           inject: [TASKFLOW_OPTIONS],
         }),
+        CallbackModule,
       ],
       providers: providers,
       exports: [TaskFlowService, TASKFLOW_OPTIONS, TASKFLOW_STRATEGIES],

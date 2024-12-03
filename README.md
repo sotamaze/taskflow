@@ -59,7 +59,7 @@ import { TaskFlowModule } from '@sotatech/nest-taskflow';
 @Module({
   imports: [
     TaskFlowModule.forRoot({
-      redis: { host: 'localhost', port: 6379 },
+      redis: { config: { host: 'localhost', port: 6379 } },
       strategies: {
         EMAIL: new EmailStrategy(), // Strategy for handling Email OTP logic
         SMS: new SmsStrategy(), // Strategy for handling SMS OTP logic
@@ -177,7 +177,7 @@ Use `forRootAsync` for asynchronous configuration.
 ```typescript
 TaskFlowModule.forRootAsync({
   useFactory: async () => ({
-    redis: { host: 'localhost', port: 6379 },
+    redis: { config: { host: 'localhost', port: 6379 } },
     strategies: {
       EMAIL: new EmailStrategy(), // Handle Email OTP
       SMS: new SmsStrategy(), // Handle SMS OTP
