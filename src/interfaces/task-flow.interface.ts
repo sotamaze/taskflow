@@ -1,5 +1,11 @@
 import { TaskFlowStatus } from 'src/enums';
 
+export interface TaskFlowRecipients {
+  email?: string;
+  phoneNumber?: string;
+  deviceId?: string;
+}
+
 export interface AddTaskOptions {
   /**
    * Priority of the task in the queue.
@@ -37,11 +43,7 @@ export interface AddTaskOptions {
    * - `phoneNumber`: Phone number of the recipient.
    * - `deviceId`: Device ID for Smart OTP.
    */
-  recipient: {
-    email?: string;
-    phoneNumber?: string;
-    deviceId?: string;
-  };
+  recipient: TaskFlowRecipients;
 }
 
 /**

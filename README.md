@@ -10,6 +10,9 @@
 
   - Add tasks with custom metadata, TTL (time-to-live), and priority.
   - Redis-based storage and management.
+  - Resend OTP for tasks.
+  - Update recipient details dynamically.
+
 
 - **Task Verification**:
 
@@ -31,10 +34,9 @@
   - Configurable maximum retry attempts and delay strategies.
 
 - **Seamless NestJS Integration**:
+
   - Built specifically for NestJS with native module integration.
   - Supports dynamic configuration using `forRoot` and `forRootAsync`.
-
----
 
 ## Installation
 
@@ -127,7 +129,37 @@ export class ExampleService {
 }
 ```
 
-### 5. Custom Strategies
+### 5. Resending OTP
+
+You can resend OTP for a specific task and method using the resendOtp method. This is useful if a user requests a new OTP after the initial one has expired or was not received.
+
+Example: Resending OTP for a Task
+```typescript
+await taskFlowService.resendOtp(
+  'task_id', // The unique identifier of the task
+  'EMAIL',   // The verification method (e.g., 'EMAIL', 'SMS')
+);
+console.log('OTP resent successfully.');
+```
+
+### 6. Updating Recipient Details
+
+You can update the recipient details for a specific task and resend OTP automatically. This is helpful if the user wants to change their email, phone number, or device during the verification process.
+
+Example: Updating Recipient Information
+```typescript
+await taskFlowService.updateRecipient(
+  'task_id', // The unique identifier of the task
+  {
+    email: 'newemail@example.com',        // Update the email address (optional)
+    phoneNumber: '+1234567890',          // Update the phone number (optional)
+    deviceId: 'new-device-id-123456',    // Update the device ID (optional)
+  },
+);
+console.log('Recipient updated and OTP resent successfully.');
+```
+
+### 7. Custom Strategies
 
 Strategies allow you to define custom OTP generation and notification logic. Extend `BaseStrategy` to create your own strategy.
 

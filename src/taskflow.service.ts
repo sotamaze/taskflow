@@ -4,6 +4,7 @@ import { Redis } from 'ioredis';
 import {
   AddTaskOptions,
   TaskFlowModuleOptions,
+  TaskFlowRecipients,
   TaskMetadata,
 } from './interfaces';
 import { TASKFLOW_OPTIONS, TASKFLOW_STRATEGIES } from './constants';
@@ -104,6 +105,138 @@ export class TaskFlowService {
     } catch {
       return false;
     }
+  }
+
+  /**
+   * Resend OTP for a specific task
+   * @param taskId Unique identifier for the task
+   * @param method Verification method to use for OTP
+   */
+  async resendOtp(taskId: string, method: string): Promise<void> {
+    try {
+      // Fetch task metadata
+      const metadata = await this.getTaskMetadata(taskId);
+
+      // Validate required parameters
+      if (!this.isValidOtpRequest(metadata, method)) {
+        return;
+      }
+
+      // Select and execute OTP strategy
+      const strategy = this.strategies[method];
+      const otp = await this.generateAndSendOtp(strategy, metadata);
+
+      // Cache OTP with appropriate expiration
+      await this.cacheOtp(taskId, method, otp, metadata);
+
+      this.logger.log(`OTP resent for task ${taskId} via ${method}`);
+    } catch (error) {
+      this.logger.error(`OTP resend failed for task ${taskId}:`, error);
+    }
+  }
+
+  /**
+   * Validate OTP request parameters
+   */
+  private isValidOtpRequest(metadata: TaskMetadata, method: string): boolean {
+    if (!metadata.recipient || !method) {
+      this.logger.warn('Missing recipient or method');
+      return false;
+    }
+
+    if (!this.strategies[method]) {
+      this.logger.warn(`Invalid OTP method: ${method}`);
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Generate and send OTP using selected strategy
+   */
+  private async generateAndSendOtp(
+    strategy: BaseStrategy,
+    metadata: TaskMetadata,
+  ): Promise<string> {
+    const otp = await strategy.generate({
+      ...metadata.data,
+      recipient: metadata.recipient,
+    });
+    await strategy.send(metadata.recipient, otp);
+    return otp;
+  }
+
+  /**
+   * Cache OTP in Redis with appropriate expiration
+   */
+  private async cacheOtp(
+    taskId: string,
+    method: string,
+    otp: string,
+    metadata: TaskMetadata,
+  ): Promise<void> {
+    const ttl = metadata.ttl || this.moduleOptions.jobTimeout || 30000;
+    await this.redisClient.set(
+      `otp:${taskId}:${method}`,
+      otp,
+      'EX',
+      Math.ceil(ttl / 1000),
+    );
+  }
+
+  /**
+   * Update recipient for a task and resend OTPs
+   * @param taskId Unique task identifier
+   * @param newRecipient Updated recipient information
+   */
+  async updateRecipient(
+    taskId: string,
+    newRecipient: TaskFlowRecipients,
+  ): Promise<void> {
+    try {
+      // Fetch and update task metadata
+      const metadata = await this.getTaskMetadata(taskId);
+      metadata.recipient = newRecipient;
+
+      // Persist updated recipient
+      await this.persistUpdatedRecipient(taskId, newRecipient);
+
+      // Resend OTP for all strategies
+      await this.resendOtpsForAllMethods(taskId);
+
+      this.logger.log(`Recipient updated for task ${taskId}`);
+    } catch (error) {
+      this.logger.error(`Recipient update failed for task ${taskId}:`, error);
+    }
+  }
+
+  /**
+   * Persist updated recipient to Redis
+   */
+  private async persistUpdatedRecipient<T>(
+    taskId: string,
+    newRecipient: T,
+  ): Promise<void> {
+    await this.redisClient.hmset(`task:${taskId}`, {
+      recipient: JSON.stringify(newRecipient),
+    });
+  }
+
+  /**
+   * Resend OTPs for all available methods
+   */
+  private async resendOtpsForAllMethods(taskId: string): Promise<void> {
+    // Clean up existing OTP keys first
+    await this.cleanupOtpKeys(taskId);
+
+    // Send new OTPs for each strategy
+    const otpPromises = Object.keys(this.strategies).map((method) =>
+      this.resendOtp(taskId, method),
+    );
+
+    // Wait for all OTPs to be resent
+    await Promise.all(otpPromises);
   }
 
   // Create task metadata with default values and configuration
