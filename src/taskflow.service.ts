@@ -13,7 +13,10 @@ import { BaseStrategy } from './strategies';
 @Injectable()
 export class TaskFlowService {
   private readonly logger = new Logger(TaskFlowService.name);
-  private redisClient: Redis;
+
+  // Redis client for publishing messages and subscribing to channels
+  private readonly subscriberClient: Redis;
+  private readonly redisClient: Redis;
 
   constructor(
     @Inject(TASKFLOW_OPTIONS)
@@ -24,7 +27,8 @@ export class TaskFlowService {
 
     private readonly redisService: RedisService,
   ) {
-    this.redisClient = this.redisService.getOrThrow();
+    this.redisClient = this.redisService.getOrThrow('client');
+    this.subscriberClient = this.redisService.getOrThrow('sub');
   }
 
   /**

@@ -18,7 +18,7 @@ export class TaskEventListenerService implements OnModuleInit {
    * Initialize the service and subscribe to Redis Pub/Sub channel.
    */
   async onModuleInit() {
-    const client = this.redisService.getOrThrow();
+    const client = this.redisService.getOrThrow('subscriber');
 
     // Subscribe to the 'task_verified' Redis channel
     await client.subscribe('task_verified');
