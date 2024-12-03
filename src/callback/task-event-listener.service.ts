@@ -3,6 +3,7 @@ import { ModulesContainer } from '@nestjs/core';
 import { RedisService } from '@liaoliaots/nestjs-redis';
 import { CallbackService } from './callback.service';
 import { ON_TASK_VERIFIED_KEY } from 'src/constants';
+import 'reflect-metadata';
 
 @Injectable()
 export class TaskEventListenerService implements OnModuleInit {
@@ -70,7 +71,6 @@ export class TaskEventListenerService implements OnModuleInit {
   private getRegisteredListeners(queue: string) {
     const listeners = [];
 
-    // Iterate over all modules and providers to find listeners
     for (const moduleRef of this.modulesContainer.values()) {
       for (const provider of moduleRef.providers.values()) {
         const instance = provider.instance;
@@ -79,22 +79,29 @@ export class TaskEventListenerService implements OnModuleInit {
         const prototype = Object.getPrototypeOf(instance);
         const methodNames = Object.getOwnPropertyNames(prototype);
 
-        // Iterate over all methods in the provider
         for (const methodName of methodNames) {
-          const metadata = Reflect.getMetadata(
-            ON_TASK_VERIFIED_KEY,
-            prototype[methodName],
-          );
+          try {
+            const metadata = Reflect.getMetadata(
+              ON_TASK_VERIFIED_KEY,
+              prototype[methodName],
+            );
 
-          // Check if the method is a registered listener
-          if (metadata && (!metadata.taskName || metadata.taskName === queue)) {
-            listeners.push({ instance, methodName });
+            if (
+              metadata &&
+              (!metadata.taskName || metadata.taskName === queue)
+            ) {
+              listeners.push({ instance, methodName });
+            }
+          } catch (error) {
+            // Log lỗi nếu không thể lấy metadata
+            this.logger.warn(
+              `Could not get metadata for method ${methodName}: ${error.message}`,
+            );
           }
         }
       }
     }
 
-    // Return all matching listeners
     return listeners;
   }
 }

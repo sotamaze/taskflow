@@ -1,10 +1,16 @@
-import { SetMetadata } from '@nestjs/common';
 import { ON_TASK_VERIFIED_KEY } from '../constants/taskflow.constant';
 
 /**
  * Decorator to register a method to be executed when a task is verified.
  * @param taskName Optional task name to scope the listener.
  */
-export function OnTaskVerified(taskName?: string): MethodDecorator {
-  return SetMetadata(ON_TASK_VERIFIED_KEY, { taskName });
-}
+export const OnTaskVerified = (taskName?: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
+    Reflect.defineMetadata(
+      ON_TASK_VERIFIED_KEY,
+      { taskName },
+      target[propertyKey],
+    );
+  };
+};
