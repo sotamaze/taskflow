@@ -55,7 +55,7 @@ export class TaskFlowService {
 
       // Persist task details and execute verification strategies
       await this.saveTaskMetadata(taskId, taskMetadata, options.ttl);
-      await this.executeStrategies(taskId, data, options);
+      await this.executeStrategies(taskId, taskMetadata, options);
       await this.addToQueue(queueName, taskId, taskMetadata.priority);
 
       this.logger.log(`Task ${taskId} added to queue ${queueName}`);
@@ -163,7 +163,9 @@ export class TaskFlowService {
       ...metadata.data,
       recipient: metadata.recipient,
     });
-    await strategy.send(metadata.recipient, otp);
+
+    // Send OTP to recipient via selected strategy
+    await strategy.send(metadata, otp);
     return otp;
   }
 
@@ -283,9 +285,9 @@ export class TaskFlowService {
   }
 
   // Execute OTP generation strategies for allowed methods
-  private async executeStrategies<T>(
+  private async executeStrategies(
     taskId: string,
-    data: T,
+    metadata: TaskMetadata,
     options: AddTaskOptions,
   ): Promise<void> {
     for (const method of options.allowedMethods) {
@@ -296,13 +298,10 @@ export class TaskFlowService {
       }
 
       // Generate and send OTP via selected strategy
-      const otp = await strategy.generate({
-        ...data,
-        recipient: options.recipient,
-      });
+      const otp = await strategy.generate(metadata);
 
       // Send OTP to recipient via selected strategy
-      await strategy.send(options.recipient, otp);
+      await strategy.send(metadata, otp);
 
       // Store OTP in Redis with expiration
       await this.redisClient.set(

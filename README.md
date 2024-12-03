@@ -188,11 +188,11 @@ export class EmailStrategy extends BaseStrategy {
    * @param recipient Recipient details (e.g., email address)
    * @param otp The generated OTP
    */
-  async send(recipient: { email?: string }, otp: string): Promise<void> {
-    if (!recipient.email) {
+  async send(metadata: TaskMetadata<JobData>, otp: string): Promise<void> {
+    if (!metadata.recipient.email) {
       throw new Error('Email is required for email notifications');
     }
-    console.log(`Sending OTP ${otp} to email: ${recipient.email}`);
+    console.log(`Sending OTP ${otp} to email: ${metadata.recipient.email}`);
     // Add your email-sending logic here
   }
 }

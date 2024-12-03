@@ -110,9 +110,5 @@ export interface TaskMetadata<T = any> {
    * - `phoneNumber`: Phone number of the recipient.
    * - `deviceId`: Device ID for Smart OTP.
    */
-  recipient: {
-    email?: string;
-    phoneNumber?: string;
-    deviceId?: string;
-  };
+  recipient: TaskFlowRecipients;
 }
