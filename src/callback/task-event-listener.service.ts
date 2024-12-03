@@ -1,9 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { ModulesContainer } from '@nestjs/core';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { RedisService } from '@liaoliaots/nestjs-redis';
-import { CallbackService } from './callback.service';
-import { ON_TASK_VERIFIED_KEY } from 'src/constants';
-import 'reflect-metadata';
+import { TaskMetadata } from 'src/interfaces';
 
 @Injectable()
 export class TaskEventListenerService implements OnModuleInit {
@@ -11,19 +9,18 @@ export class TaskEventListenerService implements OnModuleInit {
 
   constructor(
     private readonly redisService: RedisService,
-    private readonly modulesContainer: ModulesContainer,
-    private readonly callbackService: CallbackService,
+    private readonly eventEmitter: EventEmitter2, // Inject EventEmitter
   ) {}
 
   /**
    * Initialize the service and subscribe to Redis Pub/Sub channel.
    */
   async onModuleInit() {
-    const client = this.redisService.getOrThrow('subscriber');
+    const redisClient = this.redisService.getOrThrow('subscriber');
 
     // Subscribe to the 'task_verified' Redis channel
-    await client.subscribe('task_verified');
-    client.on('message', this.handleRedisMessage.bind(this));
+    await redisClient.subscribe('task_verified');
+    redisClient.on('message', this.handleRedisMessage.bind(this));
   }
 
   /**
@@ -34,74 +31,19 @@ export class TaskEventListenerService implements OnModuleInit {
   private handleRedisMessage(channel: string, message: string) {
     if (channel === 'task_verified') {
       const eventData = JSON.parse(message);
-      this.handleTaskVerifiedEvent(eventData);
+
+      // Emit the event through EventEmitter
+      this.emitTaskVerifiedEvent(eventData);
     }
   }
 
   /**
-   * Handle task verified events by invoking registered listeners.
-   * @param eventData Event data containing task information
+   * Emit the task verified event through NestJS EventEmitter.
+   * @param metadata The event data containing task information.
    */
-  private async handleTaskVerifiedEvent(eventData: {
-    taskId: string;
-    queue: string;
-  }) {
-    const listeners = this.getRegisteredListeners(eventData.queue);
-
-    // Execute all registered listeners for the task queue
-    for (const { instance, methodName } of listeners) {
-      try {
-        await this.callbackService.executeCallback(
-          () => instance[methodName](eventData),
-          eventData.taskId,
-        );
-      } catch (error) {
-        this.logger.error(
-          `Callback execution failed for task: ${eventData.taskId}. Error: ${error.message}`,
-        );
-      }
-    }
-  }
-
-  /**
-   * Retrieve all registered listeners for a specific task queue.
-   * @param queue The queue name to match listeners
-   * @returns List of matching listeners
-   */
-  private getRegisteredListeners(queue: string) {
-    const listeners = [];
-
-    for (const moduleRef of this.modulesContainer.values()) {
-      for (const provider of moduleRef.providers.values()) {
-        const instance = provider.instance;
-        if (!instance) continue;
-
-        const prototype = Object.getPrototypeOf(instance);
-        const methodNames = Object.getOwnPropertyNames(prototype);
-
-        for (const methodName of methodNames) {
-          try {
-            const metadata = Reflect.getMetadata(
-              ON_TASK_VERIFIED_KEY,
-              prototype[methodName],
-            );
-
-            if (
-              metadata &&
-              (!metadata.taskName || metadata.taskName === queue)
-            ) {
-              listeners.push({ instance, methodName });
-            }
-          } catch (error) {
-            // Log lỗi nếu không thể lấy metadata
-            this.logger.warn(
-              `Could not get metadata for method ${methodName}: ${error.message}`,
-            );
-          }
-        }
-      }
-    }
-
-    return listeners;
+  private emitTaskVerifiedEvent(metadata: TaskMetadata) {
+    const eventName = `task.verified.${metadata.queue}`;
+    this.logger.log(`Emitting event: ${eventName} for taskId: ${metadata.id}`);
+    this.eventEmitter.emit(eventName, metadata); // Emit event to EventEmitter
   }
 }

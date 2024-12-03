@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
-import { CallbackService } from './callback.service';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { TaskEventListenerService } from './task-event-listener.service';
 
 @Module({
-  providers: [CallbackService, TaskEventListenerService],
-  exports: [CallbackService, TaskEventListenerService],
+  imports: [EventEmitterModule.forRoot({ wildcard: true })],
+  providers: [TaskEventListenerService],
+  exports: [TaskEventListenerService],
 })
 export class CallbackModule {}

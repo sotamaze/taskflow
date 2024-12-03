@@ -11,35 +11,6 @@ export interface TaskFlowModuleOptions {
   redis: RedisModuleOptions;
 
   /**
-   * Retry policy for task execution.
-   */
-  retry?: {
-    /**
-     * Maximum number of retry attempts for a failed task.
-     *
-     * @default 3
-     */
-    maxAttempts?: number;
-
-    /**
-     * Strategy to use for backoff between retries.
-     * - `exponential`: Increases exponentially with each retry.
-     * - `linear`: Increases linearly with each retry.
-     * - `fixed`: Fixed time between retries.
-     *
-     * @default 'fixed'
-     */
-    backoffStrategy?: 'exponential' | 'linear' | 'fixed';
-
-    /**
-     * Base time (in milliseconds) to wait between retries.
-     *
-     * @default 1000
-     */
-    backoffTime?: number;
-  };
-
-  /**
    * Timeout (in milliseconds) for job execution.
    * If a job exceeds this timeout, it will be marked as failed.
    *
@@ -71,4 +42,29 @@ export interface TaskFlowModuleAsyncOptions {
    * Dependencies to inject into the factory function.
    */
   inject?: any[];
+}
+
+/**
+ * Options for configuring the retry mechanism in TaskFlow.
+ * These options are used to control the retry logic for task verification.
+ */
+export interface OnTaskVerifiedOptions {
+  /**
+   * Maximum number
+   * of retry attempts before failing the task verification.
+   * @default 3
+   */
+  maxAttempts?: number;
+
+  /**
+   * Backoff strategy for calculating delays between retry attempts.
+   * @default 'fixed'
+   */
+  backoffStrategy?: 'exponential' | 'linear' | 'fixed';
+
+  /**
+   * Base time for calculating the delay between retry attempts (in milliseconds).
+   * @default 1000
+   */
+  backoffTime?: number;
 }

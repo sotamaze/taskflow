@@ -64,11 +64,6 @@ import { TaskFlowModule } from '@sotatech/nest-taskflow';
         EMAIL: new EmailStrategy(), // Strategy for handling Email OTP logic
         SMS: new SmsStrategy(), // Strategy for handling SMS OTP logic
       },
-      retry: {
-        maxAttempts: 5, // Number of retry attempts for task failures
-        backoffStrategy: 'exponential', // Backoff strategy for retries
-        backoffTime: 1000, // Base time in milliseconds between retries
-      },
     }),
   ],
 })
@@ -81,7 +76,7 @@ Use `TaskFlowService` to add a task to a Redis queue.
 
 ```typescript
 const task = await taskFlowService.addTask(
-  'verificationQueue', // The queue where the task will be added
+  'QUEUE_NAME', // The queue where the task will be added
   { userId: '12345', email: 'user@example.com' }, // Task data
   {
     allowedMethods: ['EMAIL', 'SMS'], // Methods allowed for OTP verification
@@ -98,12 +93,11 @@ console.log('Task created:', task);
 Verify a task by validating its OTP.
 
 ```typescript
-const isVerified = await taskFlowService.verifySession(
-  'task_123456', // The task ID to verify
-  'EMAIL', // The method used for OTP verification
-  '123456', // The OTP provided by the user
+const isVerified = await taskFlowService.verify(
+  task.id, // Task ID
+  'EMAIL', // Method verfify
+  '123456', // OTP
 );
-
 if (isVerified) {
   console.log('Task verified successfully.');
 }
@@ -119,8 +113,12 @@ import { OnTaskVerified } from '@sotatech/nest-taskflow';
 
 @Injectable()
 export class ExampleService {
-  @OnTaskVerified('verificationQueue')
-  async handleVerifiedTask(eventData: { taskId: string; queue: string }) {
+  @OnTaskVerified('QUEUE_NAME', {
+    maxAttempts: 3, // Number of retry attempts for task failures
+    backoffStrategy: 'exponential', // Backoff strategy for retries
+    backoffTime: 5000, // Base time in milliseconds between retries
+  })
+  async handleVerifiedTask(metadata: TaskMetadata<JobData>) {
     console.log(
       `Task ${eventData.taskId} verified in queue ${eventData.queue}`,
     );
@@ -142,10 +140,10 @@ export class EmailStrategy extends BaseStrategy {
   /**
    * Generate an OTP for Email verification.
    * Override this method to provide custom OTP generation logic.
-   * @param taskData Task-specific data
+   * @param metadata Task-specific data
    * @returns Generated OTP
    */
-  async generate(taskData: Record<string, any>): Promise<string> {
+  async generate(metadata: TaskMetadata<JobData>): Promise<string> {
     // Default implementation generates a 6-digit OTP
     return Math.floor(100000 + Math.random() * 900000).toString();
   }
@@ -181,11 +179,6 @@ TaskFlowModule.forRootAsync({
     strategies: {
       EMAIL: new EmailStrategy(), // Handle Email OTP
       SMS: new SmsStrategy(), // Handle SMS OTP
-    },
-    retry: {
-      maxAttempts: 3, // Retry 3 times before failing
-      backoffStrategy: 'linear', // Retry intervals increase linearly
-      backoffTime: 500, // Start with 500ms delay
     },
   }),
 });
