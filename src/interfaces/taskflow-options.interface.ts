@@ -42,6 +42,11 @@ export interface TaskFlowModuleAsyncOptions {
    * Dependencies to inject into the factory function.
    */
   inject?: any[];
+
+  /**
+   * Imports to include in the module.
+   */
+  imports?: any[];
 }
 
 /**

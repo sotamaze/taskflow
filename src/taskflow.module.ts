@@ -90,6 +90,11 @@ export class TaskFlowModule {
           }),
           inject: [TASKFLOW_OPTIONS],
         }),
+
+        // Add any additional imports here
+        ...(asyncOptions.imports || []),
+
+        // Import the CallbackModule to handle task verification callbacks
         CallbackModule,
       ],
       providers: providers,

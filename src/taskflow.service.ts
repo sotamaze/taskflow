@@ -1,4 +1,4 @@
-import { Injectable, Inject, Logger } from '@nestjs/common';
+import { Injectable, Inject, Logger, OnModuleDestroy } from '@nestjs/common';
 import { RedisService } from '@liaoliaots/nestjs-redis';
 import { Redis } from 'ioredis';
 import {
@@ -12,7 +12,7 @@ import { TaskFlowMethods, TaskFlowStatus } from './enums';
 import { BaseStrategy } from './strategies';
 
 @Injectable()
-export class TaskFlowService {
+export class TaskFlowService implements OnModuleDestroy {
   private readonly logger = new Logger(TaskFlowService.name);
   private readonly redisClient: Redis;
 
@@ -63,7 +63,9 @@ export class TaskFlowService {
 
       // When an error occurs during task creation
     } catch (error) {
-      this.logger.error('Error adding task:', error.stack);
+      return Promise.reject(
+        `Failed to add task to queue ${queueName}: ${error}`,
+      );
     }
   }
 
@@ -129,9 +131,9 @@ export class TaskFlowService {
       // Cache OTP with appropriate expiration
       await this.cacheOtp(taskId, method, otp, metadata);
 
-      this.logger.log(`OTP resent for task ${taskId} via ${method}`);
+      // Throw error if OTP generation fails
     } catch (error) {
-      this.logger.error(`OTP resend failed for task ${taskId}:`, error);
+      return Promise.reject(`OTP resend failed for task ${taskId}: ${error}`);
     }
   }
 
@@ -207,9 +209,11 @@ export class TaskFlowService {
       // Resend OTP for all strategies
       await this.resendOtpsForAllMethods(taskId);
 
-      this.logger.log(`Recipient updated for task ${taskId}`);
+      // Throw error if recipient update fails
     } catch (error) {
-      this.logger.error(`Recipient update failed for task ${taskId}:`, error);
+      return Promise.reject(
+        `Failed to update recipient for task ${taskId}: ${error}`,
+      );
     }
   }
 
@@ -427,5 +431,10 @@ export class TaskFlowService {
       timeout: Number(metadata.timeout),
       timestamp: Number(metadata.timestamp),
     } as TaskMetadata;
+  }
+
+  // Clean up Redis client on module destroy
+  onModuleDestroy() {
+    this.redisClient.disconnect();
   }
 }
