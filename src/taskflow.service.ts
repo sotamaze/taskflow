@@ -74,17 +74,18 @@ export class TaskFlowService implements OnModuleDestroy {
    * @param otp One-time password
    * @returns Verification result
    */
-  async verify(taskId: string, method: string, otp: string): Promise<boolean> {
+  async verify(
+    taskId: string,
+    method: string,
+    otp: string,
+  ): Promise<TaskMetadata> {
     try {
       const otpKey = `otp:${taskId}:${method}`;
       const savedOtp = await this.redisClient.get(otpKey);
 
       // Validate OTP
       if (!savedOtp || savedOtp !== otp) {
-        this.logger.warn(
-          `Verification failed for task ${taskId}, method ${method}`,
-        );
-        return false;
+        throw new Error(`Invalid OTP for task ${taskId}`);
       }
 
       // Clean up and update task status
@@ -99,11 +100,13 @@ export class TaskFlowService implements OnModuleDestroy {
 
       // Return verification result
       this.logger.log(`Task ${taskId} verified via ${method}`);
-      return true;
+      return metadata;
 
       // When an error occurs during task verification
     } catch {
-      return false;
+      return Promise.reject(
+        `Failed to verify session ${taskId} via ${method}. OTP wrong or expired.`,
+      );
     }
   }
 
