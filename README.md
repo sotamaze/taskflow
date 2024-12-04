@@ -90,7 +90,7 @@ export class ExampleService {
   ) {}
 
   async addTask() {
-    const task = await taskFlowService.addTask(
+    const task = await taskFlow.addTask(
       'QUEUE_NAME', // The queue where the task will be added
       { userId: '12345', email: 'user@example.com' }, // Task data
       {
@@ -126,7 +126,7 @@ export class ExampleService {
   ) {}
 
   async addTask() {
-    const task = await taskFlowService.addTask(
+    const task = await taskFlow.addTask(
       'QUEUE_NAME', // The queue where the task will be added
       { userId: '12345', email: 'user@example.com' }, // Task data
       {
@@ -141,7 +141,7 @@ export class ExampleService {
 
   async verify() {
     const otp = '123456';
-    const isVerified = await taskFlowService.verify(
+    const isVerified = await taskFlow.verify(
       task.id, // Task ID
       TaskFlowMethods.EMAIL, // Verification method
       otp, // OTP
@@ -184,7 +184,7 @@ export class ExampleService {
 Resend OTP for a specific task and method using the `resendOtp` method.
 
 ```typescript
-await taskFlowService.resendOtp(
+await taskFlow.resendOtp(
   'task_id', // The unique identifier of the task
   TaskFlowMethods.EMAIL, // The verification method (e.g., 'EMAIL', 'SMS')
 );
@@ -198,7 +198,7 @@ console.log('OTP resent successfully.');
 Update the recipient details for a specific task and resend OTP automatically.
 
 ```typescript
-await taskFlowService.updateRecipient(
+await taskFlow.updateRecipient(
   'task_id', // The unique identifier of the task
   {
     email: 'newemail@example.com', // Update the email address (optional)
