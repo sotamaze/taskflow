@@ -7,9 +7,9 @@ import {
   TaskFlowRecipients,
   TaskMetadata,
 } from './interfaces';
-import { TASKFLOW_OPTIONS, TASKFLOW_STRATEGIES } from './constants';
+import { TASKFLOW_OPTIONS } from './constants';
 import { TaskFlowMethods, TaskFlowStatus } from './enums';
-import { BaseStrategy } from './strategies';
+import { BaseStrategy, StrategyRegistry } from './strategies';
 
 @Injectable()
 export class TaskFlowService implements OnModuleDestroy {
@@ -20,10 +20,8 @@ export class TaskFlowService implements OnModuleDestroy {
     @Inject(TASKFLOW_OPTIONS)
     private readonly moduleOptions: TaskFlowModuleOptions,
 
-    @Inject(TASKFLOW_STRATEGIES)
-    private readonly strategies: { [key: string]: BaseStrategy },
-
     private readonly redisService: RedisService,
+    private readonly strategyRegistry: StrategyRegistry,
   ) {
     // Initialize Redis clients for different operations
     this.redisClient = this.redisService.getOrThrow('client');
@@ -125,7 +123,7 @@ export class TaskFlowService implements OnModuleDestroy {
       }
 
       // Select and execute OTP strategy
-      const strategy = this.strategies[method];
+      const strategy = this.strategyRegistry.get(method);
       const otp = await this.generateAndSendOtp(strategy, metadata);
 
       // Cache OTP with appropriate expiration
@@ -146,7 +144,7 @@ export class TaskFlowService implements OnModuleDestroy {
       return false;
     }
 
-    if (!this.strategies[method]) {
+    if (!this.strategyRegistry.get(method)) {
       this.logger.warn(`Invalid OTP method: ${method}`);
       return false;
     }
@@ -237,7 +235,8 @@ export class TaskFlowService implements OnModuleDestroy {
     await this.cleanupOtpKeys(taskId);
 
     // Send new OTPs for each strategy
-    const otpPromises = Object.keys(this.strategies).map((method) =>
+    const strateries = Array.from(this.strategyRegistry.getAll().keys());
+    const otpPromises = Object.keys(strateries).map((method) =>
       this.resendOtp(taskId, method),
     );
 
@@ -295,7 +294,7 @@ export class TaskFlowService implements OnModuleDestroy {
     options: AddTaskOptions,
   ): Promise<void> {
     for (const method of options.allowedMethods) {
-      const strategy = this.strategies[method];
+      const strategy = this.strategyRegistry.get(method);
       if (!strategy) {
         this.logger.warn(`No strategy found for method: ${method}`);
         continue;

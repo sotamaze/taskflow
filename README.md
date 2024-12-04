@@ -13,7 +13,6 @@
   - Resend OTP for tasks.
   - Update recipient details dynamically.
 
-
 - **Task Verification**:
 
   - Built-in support for OTP (One-Time Password) verification for methods like SMS, Email, and Smart OTP.
@@ -37,6 +36,7 @@
 
   - Built specifically for NestJS with native module integration.
   - Supports dynamic configuration using `forRoot` and `forRootAsync`.
+  - Auto-register strategies dynamically without manual instantiation.
 
 ## Installation
 
@@ -62,15 +62,14 @@ import { TaskFlowModule } from '@sotatech/nest-taskflow';
   imports: [
     TaskFlowModule.forRoot({
       redis: { config: { host: 'localhost', port: 6379 } },
-      strategies: {
-        [TaskFlowMethods.EMAIL]: new EmailStrategy(), // Strategy for handling Email OTP logic
-        [TaskFlowMethods.SMS]: new SmsStrategy(), // Strategy for handling SMS OTP logic
-      },
+      jobTimeout: 60000,
     }),
   ],
 })
 export class AppModule {}
 ```
+
+---
 
 ### 2. Adding a Task
 
@@ -90,21 +89,25 @@ const task = await taskFlowService.addTask(
 console.log('Task created:', task);
 ```
 
+---
+
 ### 3. Verifying a Task
 
 Verify a task by validating its OTP.
 
 ```typescript
-const otp = "123456"
+const otp = '123456';
 const isVerified = await taskFlowService.verify(
   task.id, // Task ID
-  TaskFlowMethods.EMAIL, // Method verfify
+  TaskFlowMethods.EMAIL, // Verification method
   otp, // OTP
 );
 if (isVerified) {
   console.log('Task verified successfully.');
 }
 ```
+
+---
 
 ### 4. Handling Verified Tasks
 
@@ -122,60 +125,59 @@ export class ExampleService {
     backoffTime: 5000, // Base time in milliseconds between retries
   })
   async handleVerifiedTask(metadata: TaskMetadata<JobData>) {
-    console.log(
-      `Task ${eventData.taskId} verified in queue ${eventData.queue}`,
-    );
-    // Add your business logic here, such as updating a database or notifying users
+    console.log(`Task ${metadata.id} verified in queue ${metadata.queue}`);
+    // Add your business logic here
   }
 }
 ```
 
+---
+
 ### 5. Resending OTP
 
-You can resend OTP for a specific task and method using the resendOtp method. This is useful if a user requests a new OTP after the initial one has expired or was not received.
+Resend OTP for a specific task and method using the `resendOtp` method.
 
-Example: Resending OTP for a Task
 ```typescript
-const taskId = "task_123456"
 await taskFlowService.resendOtp(
-  taskId, // The unique identifier of the task
-  TaskFlowMethods.EMAIL,   // The verification method (e.g., 'EMAIL', 'SMS')
+  'task_id', // The unique identifier of the task
+  TaskFlowMethods.EMAIL, // The verification method (e.g., 'EMAIL', 'SMS')
 );
 console.log('OTP resent successfully.');
 ```
 
+---
+
 ### 6. Updating Recipient Details
 
-You can update the recipient details for a specific task and resend OTP automatically. This is helpful if the user wants to change their email, phone number, or device during the verification process.
+Update the recipient details for a specific task and resend OTP automatically.
 
-Example: Updating Recipient Information
 ```typescript
 await taskFlowService.updateRecipient(
   'task_id', // The unique identifier of the task
   {
-    email: 'newemail@example.com',        // Update the email address (optional)
-    phoneNumber: '+1234567890',          // Update the phone number (optional)
-    deviceId: 'new-device-id-123456',    // Update the device ID (optional)
+    email: 'newemail@example.com', // Update the email address (optional)
+    phoneNumber: '+1234567890', // Update the phone number (optional)
+    deviceId: 'new-device-id-123456', // Update the device ID (optional)
   },
 );
 console.log('Recipient updated and OTP resent successfully.');
 ```
 
+---
+
 ### 7. Custom Strategies
 
-Strategies allow you to define custom OTP generation and notification logic. Extend `BaseStrategy` to create your own strategy.
-
-#### Example: Email OTP Strategy
+Define custom OTP generation and notification logic by extending `BaseStrategy`.
 
 ```typescript
 import { BaseStrategy } from '@sotatech/nest-taskflow';
 
-export class EmailStrategy extends BaseStrategy {
+@RegisterStrategy(TaskFlowMethods.EMAIL)
+export class CustomEmailStrategy extends BaseStrategy {
   /**
-   * Generate an OTP for Email verification.
-   * Override this method to provide custom OTP generation logic.
-   * @param metadata Task-specific data
-   * @returns Generated OTP
+   * Generate OTP logic.
+   * Override this method to customize generate logic.
+   * @param metadata Metadata details (e.g., email address)
    */
   async generate(metadata: TaskMetadata<JobData>): Promise<string> {
     // Default implementation generates a 6-digit OTP
@@ -185,15 +187,11 @@ export class EmailStrategy extends BaseStrategy {
   /**
    * Send the OTP to the user via email.
    * Override this method to customize email sending logic.
-   * @param recipient Recipient details (e.g., email address)
+   * @param metadata Metadata details (e.g., email address)
    * @param otp The generated OTP
    */
   async send(metadata: TaskMetadata<JobData>, otp: string): Promise<void> {
-    if (!metadata.recipient.email) {
-      throw new Error('Email is required for email notifications');
-    }
-    console.log(`Sending OTP ${otp} to email: ${metadata.recipient.email}`);
-    // Add your email-sending logic here
+    console.log(`Sending OTP ${otp} to ${metadata.recipient.email}`);
   }
 }
 ```
@@ -208,13 +206,17 @@ Use `forRootAsync` for asynchronous configuration.
 
 ```typescript
 TaskFlowModule.forRootAsync({
-  useFactory: async () => ({
-    redis: { config: { host: 'localhost', port: 6379 } },
-    strategies: {
-      [TaskFlowMethods.EMAIL]: new EmailStrategy(), // Handle Email OTP
-      [TaskFlowMethods.SMS]: new SmsStrategy(), // Handle SMS OTP
+  imports: [ConfigModule],
+  useFactory: async (configService: ConfigService) => ({
+    redis: {
+      config: {
+        host: configService.get<string>('REDIS_HOST'),
+        port: configService.get<number>('REDIS_PORT'),
+      },
     },
+    jobTimeout: 60000,
   }),
+  inject: [ConfigService],
 });
 ```
 
@@ -249,6 +251,6 @@ Contributions are welcome! Please open an issue or submit a pull request for any
 
 ## Support
 
-For issues or questions, please visit our [GitHub Issues](https://github.com/sotamaze/taskflow/issues).
+For issues or questions, please visit our [GitHub Issues](https://github.com/sotatech/nest-taskflow/issues).
 
 ---

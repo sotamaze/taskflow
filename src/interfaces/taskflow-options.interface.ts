@@ -1,5 +1,4 @@
 import { RedisModuleOptions } from '@liaoliaots/nestjs-redis';
-import { BaseStrategy } from 'src/strategies';
 
 /**
  * Options for configuring the TaskFlow module.
@@ -17,14 +16,6 @@ export interface TaskFlowModuleOptions {
    * @default 30000
    */
   jobTimeout?: number;
-
-  /**
-   * Strategies for handling different verification methods (e.g., SMS, Email, Smart OTP).
-   * Each method should map to a specific strategy instance.
-   */
-  strategies: {
-    [method: string]: BaseStrategy;
-  };
 }
 
 /**

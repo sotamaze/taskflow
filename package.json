@@ -1,6 +1,6 @@
 {
   "name": "@sotatech/nest-taskflow",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "description": "A task flow management library for NestJS with Redis Pub/Sub integration.",
   "author": "SOTA dungla2708@gmail.com",
   "private": false,
