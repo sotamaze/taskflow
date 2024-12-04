@@ -10,6 +10,7 @@ import {
 import { TASKFLOW_OPTIONS } from './constants';
 import { TaskFlowMethods, TaskFlowStatus } from './enums';
 import { BaseStrategy, StrategyRegistry } from './strategies';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class TaskFlowService implements OnModuleDestroy {
@@ -411,7 +412,8 @@ export class TaskFlowService implements OnModuleDestroy {
 
   // Generate unique task identifier
   private generateTaskId(): string {
-    return `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Use UUID v4 for task ID generation
+    return uuidv4();
   }
 
   // When retrieving metadata

@@ -1,6 +1,6 @@
 {
   "name": "@sotatech/nest-taskflow",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "A task flow management library for NestJS with Redis Pub/Sub integration.",
   "author": "SOTA dungla2708@gmail.com",
   "private": false,
@@ -37,7 +37,8 @@
     "@nestjs/platform-express": "^10.0.0",
     "ioredis": "^5.4.1",
     "reflect-metadata": "^0.2.0",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "uuid": "^11.0.3"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
