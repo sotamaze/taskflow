@@ -76,17 +76,33 @@ export class AppModule {}
 Use `TaskFlowService` to add a task to a Redis queue.
 
 ```typescript
-const task = await taskFlowService.addTask(
-  'QUEUE_NAME', // The queue where the task will be added
-  { userId: '12345', email: 'user@example.com' }, // Task data
-  {
-    allowedMethods: [TaskFlowMethods.EMAIL, TaskFlowMethods.SMS], // Methods allowed for OTP verification
-    recipient: { email: 'user@example.com' }, // Recipient details
-    priority: 5, // Higher priority tasks are executed first
-    ttl: 60000, // Task expires in 60 seconds
-  },
-);
-console.log('Task created:', task);
+import {
+  InjectTaskFlow,
+  TaskFlowMethods,
+  TaskFlowService,
+} from '@sotatech/nest-taskflow';
+
+@Injectable()
+export class ExampleService {
+  constructor(
+    @InjectTaskFlow()
+    private readonly taskFlow: TaskFlowService,
+  ) {}
+
+  async addTask() {
+    const task = await taskFlowService.addTask(
+      'QUEUE_NAME', // The queue where the task will be added
+      { userId: '12345', email: 'user@example.com' }, // Task data
+      {
+        allowedMethods: [TaskFlowMethods.EMAIL, TaskFlowMethods.SMS], // Methods allowed for OTP verification
+        recipient: { email: 'user@example.com' }, // Recipient details
+        priority: 5, // Higher priority tasks are executed first
+        ttl: 60000, // Task expires in 60 seconds
+      },
+    );
+    console.log('Task created:', task);
+  }
+}
 ```
 
 ---
@@ -96,14 +112,44 @@ console.log('Task created:', task);
 Verify a task by validating its OTP.
 
 ```typescript
-const otp = '123456';
-const isVerified = await taskFlowService.verify(
-  task.id, // Task ID
-  TaskFlowMethods.EMAIL, // Verification method
-  otp, // OTP
-);
-if (isVerified) {
-  console.log('Task verified successfully.');
+import {
+  InjectTaskFlow,
+  TaskFlowMethods,
+  TaskFlowService,
+} from '@sotatech/nest-taskflow';
+
+@Injectable()
+export class ExampleService {
+  constructor(
+    @InjectTaskFlow()
+    private readonly taskFlow: TaskFlowService,
+  ) {}
+
+  async addTask() {
+    const task = await taskFlowService.addTask(
+      'QUEUE_NAME', // The queue where the task will be added
+      { userId: '12345', email: 'user@example.com' }, // Task data
+      {
+        allowedMethods: [TaskFlowMethods.EMAIL, TaskFlowMethods.SMS], // Methods allowed for OTP verification
+        recipient: { email: 'user@example.com' }, // Recipient details
+        priority: 5, // Higher priority tasks are executed first
+        ttl: 60000, // Task expires in 60 seconds
+      },
+    );
+    console.log('Task created:', task);
+  }
+
+  async verify() {
+    const otp = '123456';
+    const isVerified = await taskFlowService.verify(
+      task.id, // Task ID
+      TaskFlowMethods.EMAIL, // Verification method
+      otp, // OTP
+    );
+    if (isVerified) {
+      console.log('Task verified successfully.');
+    }
+  }
 }
 ```
 
