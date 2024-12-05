@@ -41,9 +41,10 @@ export class TaskFlowModule {
       module: TaskFlowModule,
       imports: [
         RedisModule.forRoot({
+          ...options.redis,
           config: [
-            { ...options.redis, namespace: 'client' },
-            { ...options.redis, namespace: 'subscriber' },
+            { ...options.redis.config, namespace: 'client' },
+            { ...options.redis.config, namespace: 'subscriber' },
           ],
         }),
         CallbackModule,
@@ -76,10 +77,10 @@ export class TaskFlowModule {
       imports: [
         RedisModule.forRootAsync({
           useFactory: async (options: TaskFlowModuleOptions) => ({
-            ...options,
+            ...options.redis,
             config: [
-              { ...options.redis, namespace: 'client' },
-              { ...options.redis, namespace: 'subscriber' },
+              { ...options.redis.config, namespace: 'client' },
+              { ...options.redis.config, namespace: 'subscriber' },
             ],
           }),
           inject: [TASKFLOW_OPTIONS],
